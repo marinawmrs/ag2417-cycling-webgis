@@ -10,7 +10,7 @@ import geopandas as gpd
 from sqlalchemy import create_engine
 import json
 
-with open("config.json") as f:
+with open("../config.json") as f:
     config = json.load(f)
 
 db_user = config["database"]["user"]
