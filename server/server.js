@@ -16,6 +16,8 @@ const { Pool } = require('pg');
 const pumpsRoutes = require('./routes/pumps');
 const parkingratingsRoutes = require('./routes/parking_rating');
 const pumpratingsRoutes = require('./routes/pump_rating');
+const wfsRoutes = require('./routes/sth_stad_wfs');
+
 
 
 app.use(bodyParser.json());
@@ -39,6 +41,8 @@ const pool = new Pool({
 app.use('/api', pumpsRoutes(pool));
 app.use('/api', parkingratingsRoutes(pool));
 app.use('/api', pumpratingsRoutes(pool));
+
+app.use('/api', wfsRoutes);
 
 
 app.listen(config.app.port, () => console.log(`app listening`));

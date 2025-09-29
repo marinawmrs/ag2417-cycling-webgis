@@ -18,7 +18,7 @@ db_password = config["database"]["password"]
 db_host = config["database"]["host"]
 db_port = config["database"]["port"]
 
-gdf = gpd.read_file("/Users/marinawiemers/Downloads/Cykelpump_Punkt.gpkg")
+gdf = gpd.read_file("/Users/marinawiemers/Downloads/Cykelparkering_Punkt.gpkg")
 engine = create_engine(f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/ag2417_25")
-gdf.to_postgis("cykelpump", engine, schema="ag2417_25_g1", if_exists="replace")
+gdf.to_postgis("cykelparkering", engine, schema="ag2417_25_g1", if_exists="replace")
 

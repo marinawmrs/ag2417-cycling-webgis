@@ -13,6 +13,14 @@ export default function MapScreen() {
   const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
   const [averageBikepump, setAverageBikepump] = useState(null);
 
+//  // fetch wfs geojson
+//  useEffect(() => {
+//  fetch('http://<server-ip>:3000/api/get_wfs_data')
+//    .then(res => res.json())
+//    .then(data => setFeatures(data.features || []))
+//    .catch(err => console.error(err));
+//}, []);
+
   // fetch geojson
   useEffect(() => {
     fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson`)
