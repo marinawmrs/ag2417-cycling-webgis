@@ -1,24 +1,13 @@
-/**
- * ------------------------------------------------------------------------
- * File:        app.js.
- * Description: server side js to fetch and send data to client side
- * Author:      marinawiemers, johanna schaefer
- * Created:     2025-09-22
- * Notes:       -
- * ------------------------------------------------------------------------
- */
-
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const { Pool } = require('pg');
 const pumpsRoutes = require('./routes/pumps');
+const parkingsRoutes = require('./routes/parking');
 const parkingratingsRoutes = require('./routes/parking_rating');
 const pumpratingsRoutes = require('./routes/pump_rating');
 const wfsRoutes = require('./routes/sth_stad_wfs');
-
-
 
 app.use(bodyParser.json());
 app.use(function (req, res, next) {
@@ -27,7 +16,6 @@ app.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     next();
 });
-
 
 const config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
 const pool = new Pool({
@@ -39,6 +27,7 @@ const pool = new Pool({
 });
 
 app.use('/api', pumpsRoutes(pool));
+app.use('/api', parkingsRoutes(pool));
 app.use('/api', parkingratingsRoutes(pool));
 app.use('/api', pumpratingsRoutes(pool));
 

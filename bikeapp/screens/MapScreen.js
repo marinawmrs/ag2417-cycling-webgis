@@ -1,56 +1,113 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, ActivityIndicator, Text, Modal, Button } from 'react-native';
 import { TouchableOpacity } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
+import * as Location from 'expo-location';
+
 import config from '../conn.json';
 
+// components
+import PumpDetailsModal from '../components/PumpDetailsModal';
+import PumpMarkers from '../components/PumpMarkers';
+import ParkingMarkers from '../components/ParkingMarkers';
+import BottomNavigation from '../components/BottomNavigation';
 
 export default function MapScreen() {
   const mapRef = useRef(null);
-  const [features, setFeatures] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [pumps, setPumps] = useState([]);
+  const [parkings, setParkings] = useState([]);
+  const [bikePaths, setBikePaths] = useState([]);
+  const [loadingPumps, setLoadingPumps] = useState(true);
+  const [loadingParkings, setLoadingParkings] = useState(true);
+
+  const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: false, paths: false });
+
+  function toggleLayer(layer) {
+    setVisibleLayers(function(prev) {
+    const updated = {
+        pumps: prev.pumps,
+        parking: prev.parking,
+        paths: prev.paths,
+    };
+    updated[layer] = !prev[layer];
+    return updated;
+    });
+ }
+
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
   const [averageBikepump, setAverageBikepump] = useState(null);
+  const [bikeparkRatings, setBikeparkRatings] = useState({ working_status: null, vibe_rating: null });
+  const [averageBikepark, setAverageBikepark] = useState(null);
 
 //  // fetch wfs geojson
 //  useEffect(() => {
-//  fetch('http://<server-ip>:3000/api/get_wfs_data')
-//    .then(res => res.json())
-//    .then(data => setFeatures(data.features || []))
-//    .catch(err => console.error(err));
-//}, []);
+//    fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_wfs_data`)
+//      .then(res => res.json())
+//      .then(data => {
+//        if (data?.features) {
+//          setBikePaths(data.features);
+//        } else {
+//          console.error('Unexpected WFS:', data);
+//        }
+//      })
+//      .catch(err => console.error('Error fetching WFS :', err))
+//  }, []);
 
-  // fetch geojson
-  useEffect(() => {
-    fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson`)
-      .then(res => res.json())
-      .then(data => {
-        if (data?.features) {
-          setFeatures(data.features);
-        } else if (data[0]?.row_to_json?.features) {
-          setFeatures(data[0].row_to_json.features);
-        } else {
-          console.error('Unexpected GeoJSON structure:', data);
-        }
-      })
-      .catch(err => console.error('Error fetching GeoJSON:', err))
-      .finally(() => setLoading(false));
-  }, []);
+//  // fetch geojson for all bike pumps
+//  useEffect(() => {
+//    fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson`)
+//      .then(res => res.json())
+//      .then(data => {
+//        if (data?.features) {
+//          setPumps(data.features);
+//        } else if (data[0]?.row_to_json?.features) {
+//          setPumps(data[0].row_to_json.features);
+//        } else {
+//          console.error('Unexpected GeoJSON structure:', data);
+//        }
+//      })
+//      .catch(err => console.error('Error fetching pumps:', err))
+//      .finally(() => setLoadingPumps(false));
+//  }, []);
 
-  // fit bounds to markers
-  useEffect(() => {
-    if (features.length > 0 && mapRef.current) {
-      const coords = features.map(f => ({
-        latitude: f.geometry.coordinates[1],
-        longitude: f.geometry.coordinates[0],
-      }));
-      mapRef.current.fitToCoordinates(coords, {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-        animated: true,
-      });
-    }
-  }, [features]);
+  // fetch geojson for bike parking spots (x closest)
+    useEffect(() => {
+        (async () => {
+            // get location
+            let locationPermission = await Location.requestForegroundPermissionsAsync();
+            if (locationPermission.status !=='granted'){
+                console.error('Location permission denied.');
+                return;
+            }
+            let location = await Location.getCurrentPositionAsync({});
+
+            // get x closest pumps
+            const pumpsRes = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson_closest?lon=${location.coords.longitude}&lat=${location.coords.latitude}`);
+            const pumpsData = await pumpsRes.json();
+            if (pumpsData?.features) {
+                setPumps(pumpsData.features);
+            } else if (pumpsData[0]?.row_to_json?.features) {
+                setPumps(parkingData[0].row_to_json.features);
+            } else {
+                console.error('Unexpected pumps GeoJSON:', pumpsData);
+            }
+            setLoadingPumps(false);
+
+            // get x closest parking
+            const parkingRes = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_parking_geojson_closest?lon=${location.coords.longitude}&lat=${location.coords.latitude}`);
+            const parkingData = await parkingRes.json();
+            if (parkingData?.features) {
+                setParkings(parkingData.features);
+            } else if (parkingData[0]?.row_to_json?.features) {
+                setParkings(parkingData[0].row_to_json.features);
+            } else {
+                console.error('Unexpected parking GeoJSON:', parkingData);
+            }
+            setLoadingParkings(false);
+
+        })();
+    }, []);
 
   async function submitBikepumpRating() {
     try {
@@ -66,12 +123,10 @@ export default function MapScreen() {
       alert('Rating submitted!');
       setBikepumpRatings({ working_status: null, vibe_rating: null });
     } catch (err) {
-      console.error('Error submitting bikepump rating:', err);
+      console.error('Error submitting bike-pump rating:', err);
       alert('Error submitting rating');
     }
   }
-
-
 
   return (
     <View style={styles.container}>
@@ -84,16 +139,13 @@ export default function MapScreen() {
           latitudeDelta: 0.1,
           longitudeDelta: 0.1,
         }}
+        showsUserLocation
+        showsMyLocationButton
       >
-        {features.map((feature, index) => {
-          const [lon, lat] = feature.geometry.coordinates;
-          return (
-            <Marker
-              key={index}
-              coordinate={{ latitude: lat, longitude: lon }}
-              title={feature.properties?.name || 'Cykelpump'}
-              description={feature.properties?.address || ''}
-              onPress={() => {
+        {visibleLayers.pumps && (
+            <PumpMarkers
+              pumps={pumps}
+              onSelect={(feature) => {
                 setSelectedFeature(feature);
                 fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/pump_average/${feature.properties.fid}`)
                   .then((res) => res.json())
@@ -101,94 +153,39 @@ export default function MapScreen() {
                   .catch((err) => console.error('Error fetching bikepump average:', err));
               }}
             />
-          );
-        })}
+        )}
+
+        {visibleLayers.parking && (
+            <ParkingMarkers
+              parkings={parkings}
+              onSelect={(feature) => {
+                setSelectedFeature(feature);
+                fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/parking_average/${feature.properties.fid}`)
+                  .then((res) => res.json())
+                  .then(setAverageBikepark)
+                  .catch((err) => console.error('Error fetching parking spot average:', err));
+              }}
+            />
+        )}
+
       </MapView>
 
-      {loading && (
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color="#0000ff" />
-        </View>
-      )}
+      <PumpDetailsModal
+        visible={!!selectedFeature}
+        feature={selectedFeature}
+        averageBikepump={averageBikepump}
+        bikepumpRatings={bikepumpRatings}
+        setBikepumpRatings={setBikepumpRatings}
+        onSubmit={submitBikepumpRating}
+        onClose={() => {
+          setSelectedFeature(null);
+          setAverageBikepump(null);
+          setBikepumpRatings({ working_status: null, vibe_rating: null });
+        }}
+      />
 
-      {selectedFeature && (
-        <Modal visible={true} transparent={true} animationType="slide">
-          <View style={styles.modalBackground}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>{selectedFeature.properties?.name}</Text>
-              <Text>{selectedFeature.properties?.address}</Text>
-              <Text>Type: {selectedFeature.properties?.type}</Text>
+      <BottomNavigation value={visibleLayers} onChange={toggleLayer} />
 
-              {averageBikepump ? (
-                <View style={{ marginTop: 10 }}>
-                  <Text style={{ fontWeight: 'bold' }}>Ratings (last 10 weeks):</Text>
-                  <Text>Status: {averageBikepump.majority_working === 1 ? ' Working' : ' Broken'}</Text>
-                  <Text>Vibe: {averageBikepump.avg_vibe}</Text>
-                  <Text style={{ marginTop: 10, fontWeight: 'bold' }}>Your Rating:</Text>
-
-                  <Text>🛠 Working status</Text>
-                  <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-                    {[1, 0].map((value) => {
-                      const isSelected = bikepumpRatings.working_status === value;
-                      return (
-                        <TouchableOpacity
-                          key={value}
-                          onPress={() => setBikepumpRatings((prev) => ({ ...prev, working_status: value }))}
-                          style={{
-                            backgroundColor: isSelected ? '#4CAF50' : '#eee',
-                            padding: 10,
-                            marginRight: 10,
-                            borderRadius: 5,
-                          }}
-                        >
-                          <Text style={{ color: isSelected ? 'white' : 'black' }}>
-                            {value === 1 ? ' Working' : ' Broken'}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
-                  <Text>🎵 Vibe</Text>
-                  <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-                    {[1, 2,3,4,5].map((value) => {
-                      const isSelected = bikepumpRatings.vibe_rating === value;
-                      return (
-                        <TouchableOpacity
-                          key={value}
-                          onPress={() => setBikepumpRatings((prev) => ({ ...prev, vibe_rating: value }))}
-                          style={{
-                            backgroundColor: isSelected ? '#4CAF50' : '#eee',
-                            padding: 10,
-                            marginRight: 10,
-                            borderRadius: 5,
-                          }}
-                        >
-                          <Text style={{ color: isSelected ? 'white' : 'black' }}>
-                            {value.toString()}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
-                 
-
-                </View>
-              ) : (
-                <Text style={{ marginTop: 10 }}>Loading average ratings…</Text>
-              )}
-              <Button title="Submit Rating" onPress={submitBikepumpRating} />
-              <Button title="Close" onPress={() => {
-                setSelectedFeature(null);
-                setAverageBikepump(null);
-                setBikepumpRatings({ working_status: null, vibe_rating: null });
-              }} />
-            </View>
-
-          </View>
-        </Modal>
-      )}
     </View>
   );
 }
@@ -202,22 +199,5 @@ const styles = StyleSheet.create({
     left: '50%',
     marginLeft: -25,
     marginTop: -25,
-  },
-  modalBackground: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 8,
-    width: '80%',
-  },
-  modalTitle: {
-    fontWeight: 'bold',
-    fontSize: 18,
-    marginBottom: 10,
   },
 });
