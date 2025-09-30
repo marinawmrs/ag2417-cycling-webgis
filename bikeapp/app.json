@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Bikeapp",
-    "slug": "Bikeapp",
+    "name": "test-app",
+    "slug": "test-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,16 +20,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.jojo1820.Bikeapp"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "45a95f6a-9358-482d-ad58-e0785ba8523f"
-      }
     }
   }
 }

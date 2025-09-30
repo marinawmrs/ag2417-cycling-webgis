@@ -7,7 +7,8 @@ const pumpsRoutes = require('./routes/pumps');
 const parkingsRoutes = require('./routes/parking');
 const parkingratingsRoutes = require('./routes/parking_rating');
 const pumpratingsRoutes = require('./routes/pump_rating');
-const wfsRoutes = require('./routes/sth_stad_wfs');
+//const wfsRoutes = require('./routes/sth_stad_wfs');
+const bikeRouting = require('./routes/bike_routing')
 
 app.use(bodyParser.json());
 app.use(function (req, res, next) {
@@ -31,7 +32,9 @@ app.use('/api', parkingsRoutes(pool));
 app.use('/api', parkingratingsRoutes(pool));
 app.use('/api', pumpratingsRoutes(pool));
 
-app.use('/api', wfsRoutes);
+//app.use('/api', wfsRoutes);
+
+app.use('/api', bikeRouting(pool));
 
 
 app.listen(config.app.port, () => console.log(`app listening`));

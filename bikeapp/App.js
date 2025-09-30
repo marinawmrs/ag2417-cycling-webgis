@@ -2,10 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MapScreen from './screens/MapScreen';
+import RouteScreen from "./screens/RouteScreen";
+
+import { createStackNavigator } from "@react-navigation/stack";
+import { NavigationContainer } from '@react-navigation/native';
+
+const Stack = createStackNavigator();
 
 
 export default function HomeScreen() {
-    return <MapScreen />
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen name="Map" component={MapScreen} />
+        <Stack.Screen name="Route" component={RouteScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 //  const [features, setFeatures] = useState([]);
 //  const [loading, setLoading] = useState(true);
 //

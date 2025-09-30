@@ -12,7 +12,7 @@ import PumpMarkers from '../components/PumpMarkers';
 import ParkingMarkers from '../components/ParkingMarkers';
 import BottomNavigation from '../components/BottomNavigation';
 
-export default function MapScreen() {
+export default function MapScreen({ navigation }) {
   const mapRef = useRef(null);
   const [pumps, setPumps] = useState([]);
   const [parkings, setParkings] = useState([]);
@@ -186,9 +186,15 @@ export default function MapScreen() {
 
       <BottomNavigation value={visibleLayers} onChange={toggleLayer} />
 
+        {/* Route button */}
+        <View style={styles.routeButton}>
+        <Button title="Plan Route" onPress={() => navigation.navigate('Route')} />
+      </View>
     </View>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
