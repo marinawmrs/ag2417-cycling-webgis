@@ -4,6 +4,7 @@ import { TouchableOpacity } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Switch } from 'react-native-switch';
+import { Snackbar } from 'react-native-paper';
 
 
 import config from '../conn.json';
@@ -26,16 +27,19 @@ export default function MapScreen({ nightMode, setNightMode }) {
       { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
   ];
   const lightMapStyle = []
+  const [darkNotifVisible, setDarkNotifVisible] = useState(true);
 
 
   const [pumps, setPumps] = useState([]);
   const [parkings, setParkings] = useState([]);
   const [lights, setLights] = useState([]);
+
   const [loadingPumps, setLoadingPumps] = useState(true);
   const [loadingParkings, setLoadingParkings] = useState(true);
 
   const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: false, paths: false });
 
+  // visibility toggles for "layers"
   function toggleLayer(layer) {
     setVisibleLayers(function(prev) {
     const updated = {
@@ -46,45 +50,16 @@ export default function MapScreen({ nightMode, setNightMode }) {
     updated[layer] = !prev[layer];
     return updated;
     });
- }
+  }
 
+  // dismissing dark mode lights notification
+  const onDismissDarkNotif = () => setDarkNotifVisible(false);
 
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
   const [averageBikepump, setAverageBikepump] = useState(null);
   const [bikeparkRatings, setBikeparkRatings] = useState({ working_status: null, vibe_rating: null });
   const [averageBikepark, setAverageBikepark] = useState(null);
-
-//  // fetch wfs geojson
-//  useEffect(() => {
-//    fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_wfs_data_light`)
-//      .then(res => res.json())
-//      .then(data => {
-//        if (data?.features) {
-//          setLights(data.features);
-//        } else {
-//          console.error('Unexpected WFS:', data);
-//        }
-//      })
-//      .catch(err => console.error('Error fetching WFS :', err))
-//  }, []);
-
-//  // fetch geojson for all bike pumps
-//  useEffect(() => {
-//    fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson`)
-//      .then(res => res.json())
-//      .then(data => {
-//        if (data?.features) {
-//          setPumps(data.features);
-//        } else if (data[0]?.row_to_json?.features) {
-//          setPumps(data[0].row_to_json.features);
-//        } else {
-//          console.error('Unexpected GeoJSON structure:', data);
-//        }
-//      })
-//      .catch(err => console.error('Error fetching pumps:', err))
-//      .finally(() => setLoadingPumps(false));
-//  }, []);
 
   // fetch geojson for bike parking spots (x closest)
     useEffect(() => {
@@ -96,6 +71,20 @@ export default function MapScreen({ nightMode, setNightMode }) {
                 return;
             }
             let location = await Location.getCurrentPositionAsync({});
+
+            const sunRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${location.coords.latitude}&lng=${location.coords.longitude}&date=today&formatted=0`);
+            const sunData = await sunRes.json();
+            if(sunData.status === 'OK') {
+                const sunRise = new Date(sunData.results.civil_twilight_begin);
+                const sunSet = new Date(sunData.results.civil_twilight_end);
+                const now = new Date();
+                const isDay = now >= sunRise && now <= sunSet;
+                setNightMode(!isDay);
+                console.log('Twilight start & end today:', sunRise, sunSet)
+            } else {
+                console.error('Error fetching daylight API')
+            }
+
 
             // get x closest pumps
             const pumpsRes = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson_closest?lon=${location.coords.longitude}&lat=${location.coords.latitude}`);
@@ -217,7 +206,7 @@ export default function MapScreen({ nightMode, setNightMode }) {
 
       <View style={{
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'flex-start',
         position: 'absolute',
         top: 50,
         left: 50,
@@ -233,6 +222,25 @@ export default function MapScreen({ nightMode, setNightMode }) {
           />
       </View>
 
+      <View style={{
+        bottom: '50%',
+        left: '10%',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+          <Snackbar
+            visible={nightMode && darkNotifVisible}
+            onDismiss = {onDismissDarkNotif}
+            action={{
+              label: 'Hide'
+            }}
+            style={{
+                width: '80%',
+            }}>
+            💡🔦 Remember to turn your bike lights on!
+          </Snackbar>
+      </View>
+
       <BottomNavigation value={visibleLayers} onChange={toggleLayer} nightMode={nightMode} />
 
     </View>
@@ -242,11 +250,4 @@ export default function MapScreen({ nightMode, setNightMode }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  loader: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginLeft: -25,
-    marginTop: -25,
-  },
 });
