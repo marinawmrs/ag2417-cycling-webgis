@@ -3,6 +3,8 @@ import { StyleSheet, View, ActivityIndicator, Text, Modal, Button } from 'react-
 import { TouchableOpacity } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { Switch } from 'react-native-switch';
+
 
 import config from '../conn.json';
 
@@ -12,11 +14,23 @@ import PumpMarkers from '../components/PumpMarkers';
 import ParkingMarkers from '../components/ParkingMarkers';
 import BottomNavigation from '../components/BottomNavigation';
 
-export default function MapScreen() {
+export default function MapScreen({ nightMode, setNightMode }) {
   const mapRef = useRef(null);
+
+  const darkMapStyle = [
+      { elementType: "geometry", stylers: [{ color: "#212121" }] },
+      { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+      { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+      { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
+      { featureType: "road", elementType: "geometry", stylers: [{ color: "#383838" }] },
+      { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
+  ];
+  const lightMapStyle = []
+
+
   const [pumps, setPumps] = useState([]);
   const [parkings, setParkings] = useState([]);
-  const [bikePaths, setBikePaths] = useState([]);
+  const [lights, setLights] = useState([]);
   const [loadingPumps, setLoadingPumps] = useState(true);
   const [loadingParkings, setLoadingParkings] = useState(true);
 
@@ -34,6 +48,7 @@ export default function MapScreen() {
     });
  }
 
+
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
   const [averageBikepump, setAverageBikepump] = useState(null);
@@ -42,11 +57,11 @@ export default function MapScreen() {
 
 //  // fetch wfs geojson
 //  useEffect(() => {
-//    fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_wfs_data`)
+//    fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_wfs_data_light`)
 //      .then(res => res.json())
 //      .then(data => {
 //        if (data?.features) {
-//          setBikePaths(data.features);
+//          setLights(data.features);
 //        } else {
 //          console.error('Unexpected WFS:', data);
 //        }
@@ -106,6 +121,18 @@ export default function MapScreen() {
             }
             setLoadingParkings(false);
 
+            // get lights
+//            console.log('fetching lights')
+//            const lightsRes = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_wfs_data_light`);
+//            console.log(lightsRes)
+//            const lightsData = await lightsRes.json();
+//            if (lightsData?.features) {
+//              console.log("Lights:", lightsData.features.slice(0, 1));
+//              setLights(lightsData.features);
+//            } else {
+//              console.error("Unexpected lights data:", lightsData);
+//            }
+
         })();
     }, []);
 
@@ -128,11 +155,14 @@ export default function MapScreen() {
     }
   }
 
+
   return (
     <View style={styles.container}>
       <MapView
         ref={mapRef}
         style={styles.map}
+        userInterfaceStyle ={nightMode ? 'dark' : 'light'} // works for ios
+        customMapStyle={nightMode ? darkMapStyle : lightMapStyle}
         initialRegion={{
           latitude: 59.324608,
           longitude: 18.06736,
@@ -142,6 +172,7 @@ export default function MapScreen() {
         showsUserLocation
         showsMyLocationButton
       >
+
         {visibleLayers.pumps && (
             <PumpMarkers
               pumps={pumps}
@@ -184,7 +215,25 @@ export default function MapScreen() {
         }}
       />
 
-      <BottomNavigation value={visibleLayers} onChange={toggleLayer} />
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        position: 'absolute',
+        top: 50,
+        left: 50,
+      }}>
+          <Switch
+            value={nightMode}
+            onValueChange={() => setNightMode(prev => !prev)}
+            disabled={false}
+            activeText={"🌙"}
+            inActiveText={"☀️"}
+            backgroundActive={'#7475b6'}
+            backgroundInactive={'#c9ebff'}
+          />
+      </View>
+
+      <BottomNavigation value={visibleLayers} onChange={toggleLayer} nightMode={nightMode} />
 
     </View>
   );
