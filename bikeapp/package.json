@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@turf/turf": "^7.2.0",
     "expo": "~54.0.10",
     "expo-location": "~19.0.7",
     "expo-status-bar": "~3.0.8",
@@ -19,7 +20,8 @@
     "react-native-maps": "1.20.1",
     "react-native-paper": "^5.14.5",
     "react-native-switch": "^1.5.1",
-    "react-native-web": "^0.21.0"
+    "react-native-web": "^0.21.0",
+    "turf": "^3.0.14"
   },
   "private": true
 }

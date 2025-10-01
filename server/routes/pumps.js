@@ -24,7 +24,7 @@ module.exports = (pool) => {
   });
 
 
-    router.get('/get_pumps_geojson_closest', (req, res) => {
+  router.get('/get_pumps_geojson_closest', (req, res) => {
     const { lon, lat } = req.query;
     const query_geojson = `
       SELECT row_to_json(fc) FROM (

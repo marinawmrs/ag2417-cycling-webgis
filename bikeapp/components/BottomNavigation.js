@@ -31,7 +31,7 @@ export default function BottomNavigation({ value, onChange, nightMode }) {
                 value="parking"
                 status={value.parking ? 'checked' : 'unchecked'}
                 onPress={() => onChange('parking')}
-                style={{backgroundColor: value.parkings ? activeColor  : 'transparent'}}
+                style={{backgroundColor: value.parking ? activeColor  : 'transparent'}}
             />
             <ToggleButton
                 icon="map"

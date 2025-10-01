@@ -5,6 +5,7 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Switch } from 'react-native-switch';
 import { Snackbar } from 'react-native-paper';
+import * as turf from '@turf/turf';
 
 
 import config from '../conn.json';
@@ -13,6 +14,7 @@ import config from '../conn.json';
 import PumpDetailsModal from '../components/PumpDetailsModal';
 import PumpMarkers from '../components/PumpMarkers';
 import ParkingMarkers from '../components/ParkingMarkers';
+import LightsMarkers from '../components/LightsMarkers';
 import BottomNavigation from '../components/BottomNavigation';
 
 export default function MapScreen({ nightMode, setNightMode }) {
@@ -33,9 +35,6 @@ export default function MapScreen({ nightMode, setNightMode }) {
   const [pumps, setPumps] = useState([]);
   const [parkings, setParkings] = useState([]);
   const [lights, setLights] = useState([]);
-
-  const [loadingPumps, setLoadingPumps] = useState(true);
-  const [loadingParkings, setLoadingParkings] = useState(true);
 
   const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: false, paths: false });
 
@@ -91,36 +90,34 @@ export default function MapScreen({ nightMode, setNightMode }) {
             const pumpsData = await pumpsRes.json();
             if (pumpsData?.features) {
                 setPumps(pumpsData.features);
-            } else if (pumpsData[0]?.row_to_json?.features) {
-                setPumps(parkingData[0].row_to_json.features);
+                console.log('pump data received')
             } else {
                 console.error('Unexpected pumps GeoJSON:', pumpsData);
             }
-            setLoadingPumps(false);
 
             // get x closest parking
             const parkingRes = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_parking_geojson_closest?lon=${location.coords.longitude}&lat=${location.coords.latitude}`);
             const parkingData = await parkingRes.json();
             if (parkingData?.features) {
                 setParkings(parkingData.features);
-            } else if (parkingData[0]?.row_to_json?.features) {
-                setParkings(parkingData[0].row_to_json.features);
+                console.log('parking data received ')
             } else {
                 console.error('Unexpected parking GeoJSON:', parkingData);
             }
-            setLoadingParkings(false);
+
+            // get bounding box of pumps & parking locations
+            const fetchedPointsColl = turf.featureCollection([...pumpsData.features, ...parkingData.features])
+            const fetchedPointsBbox = turf.bbox(fetchedPointsColl);
 
             // get lights
-//            console.log('fetching lights')
-//            const lightsRes = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_wfs_data_light`);
-//            console.log(lightsRes)
-//            const lightsData = await lightsRes.json();
-//            if (lightsData?.features) {
-//              console.log("Lights:", lightsData.features.slice(0, 1));
-//              setLights(lightsData.features);
-//            } else {
-//              console.error("Unexpected lights data:", lightsData);
-//            }
+            try {
+              const lightsRes = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_wfs_data_light?bbox=${fetchedPointsBbox}&centroids=${encodeURIComponent(JSON.stringify(fetchedPointsColl))}`);
+              const lightsData = await lightsRes.json();
+              setLights(lightsData?.features);
+              console.log("lights fetched");
+            } catch(err) {
+              console.error("Unexpected lights data:", lightsData);
+            }
 
         })();
     }, []);
@@ -161,6 +158,7 @@ export default function MapScreen({ nightMode, setNightMode }) {
         showsUserLocation
         showsMyLocationButton
       >
+        {nightMode && (<LightsMarkers lights={lights} />)}
 
         {visibleLayers.pumps && (
             <PumpMarkers
