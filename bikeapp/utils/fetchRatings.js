@@ -1,11 +1,11 @@
 import config from '../conn.json';
 
-export async function submitBikepumpRating() {
+export async function postBikepumpRating(pumpId, bikepumpRatings) {
     await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/rate_pump`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            pump_id: selectedFeature.properties.fid,
+            pump_id: pumpId,
             working_status: bikepumpRatings.working_status,
             vibe_rating: bikepumpRatings.vibe_rating,
         }),
@@ -20,4 +20,11 @@ export async function fetchPumpAverage(fid) {
 export async function fetchParkingAverage(fid) {
     const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/parking_average/${fid}`);
     return res.json();
+}
+
+export async function fetchFilteredPumps(longitude, latitude, distance, rating) {
+    const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson_filtered?lon=${longitude}&lat=${latitude}&distance=${distance}&rating=${rating}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error('Error fetching filtered pumps');
+    return data.features || [];
 }

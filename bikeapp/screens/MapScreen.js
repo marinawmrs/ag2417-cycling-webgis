@@ -15,10 +15,11 @@ import PumpMarkers from '../components/PumpMarkers';
 import ParkingMarkers from '../components/ParkingMarkers';
 import LightsMarkers from '../components/LightsMarkers';
 import BottomNavigation from '../components/BottomNavigation';
+import FilterModal from '../components/FilterModal';
 
 // helper/fetching functions
 import {fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights} from '../utils/fetchMapData';
-import { submitPumpRating, fetchPumpAverage, fetchParkingAverage } from '../utils/fetchRatings';
+import { postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchFilteredPumps } from '../utils/fetchRatings';
 import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
 
 
@@ -30,13 +31,13 @@ export default function MapScreen({ nightMode, setNightMode }) {
     const [parkings, setParkings] = useState([]);
     const [lights, setLights] = useState([]);
     const [darkNotifVisible, setDarkNotifVisible] = useState(true);
-    const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: false, paths: false });
+    const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: false, paths: false, distance: 5, rating: 0});
     const [selectedFeature, setSelectedFeature] = useState(null);
     const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
     const [bikeparkRatings, setBikeparkRatings] = useState({ working_status: null, vibe_rating: null });
     const [averageBikepump, setAverageBikepump] = useState(null);
     const [averageBikepark, setAverageBikepark] = useState(null);
-
+    const [modalVisible, setModalVisible] = useState(false);
 
     // visibility toggles for "layers"
     function toggleLayer(layer) {
@@ -45,6 +46,8 @@ export default function MapScreen({ nightMode, setNightMode }) {
                 pumps: prev.pumps,
                 parking: prev.parking,
                 paths: prev.paths,
+                distance: prev.distance,
+                rating: prev.rating
             };
             updated[layer] = !prev[layer];
             return updated;
@@ -57,14 +60,40 @@ export default function MapScreen({ nightMode, setNightMode }) {
     // submit & update pump rating
     async function submitBikepumpRating() {
         try {
-            await submitPumpRating(selectedFeature.properties.fid, bikepumpRatings);
+            console.log(selectedFeature.properties)
+            await postBikepumpRating(selectedFeature.properties.fid, bikepumpRatings);
             alert('Rating submitted!');
             setBikepumpRatings({ working_status: null, vibe_rating: null });
         } catch (err) {
             console.error(err);
-            alert('Error submitting rating');
+            alert('Error submitting rating ');
         }
     }
+
+    // fetch new pumps & parkings based on filters
+    async function applyFilters() {
+        try {
+            let location = await Location.getCurrentPositionAsync({});
+            const { latitude, longitude } = location.coords;
+            if (visibleLayers.pumps) {
+                const filteredPumps = await fetchFilteredPumps(longitude, latitude, visibleLayers.distance, visibleLayers.rating);
+                setPumps(filteredPumps);
+            } else {
+                setPumps([]);
+            }
+
+//            if (visibleLayers.parking) {
+//                TODO: write server-side for parking once rating is done
+//                setParkings(data.features || []);
+//            } else {
+//                setParkings([]);
+//            }
+
+        } catch (err) {
+            console.error('Error fetching filtered data:', err);
+        }
+    }
+
 
     useEffect(() => {
         (async () => {
@@ -98,11 +127,10 @@ export default function MapScreen({ nightMode, setNightMode }) {
                 // get bounding box of pumps & parking locations
                 const fetchedPointsColl = turf.featureCollection([...pumps, ...parkings])
                 const fetchedPointsBbox = turf.bbox(fetchedPointsColl);
-                console.log(fetchedPointsBbox, fetchedPointsColl)
 
                 // lights
-                const lightsData = await fetchLights(fetchedPointsColl, fetchedPointsBbox );
-                setLights(lightsData);
+//                const lightsData = await fetchLights(fetchedPointsColl, fetchedPointsBbox );
+//                setLights(lightsData);
             } catch (e) {
                 console.error('Error fetching map (pumps, parkings, lights) data:', e);
             }
@@ -170,6 +198,18 @@ export default function MapScreen({ nightMode, setNightMode }) {
                 }}
             />
 
+            {/* Modal for filter selection*/}
+            <FilterModal
+                visible={modalVisible}
+                onDismiss={() => setModalVisible(false)}
+                visibleLayers={visibleLayers}
+                setVisibleLayers={setVisibleLayers}
+                onApply={() => {
+                    applyFilters();
+                    setModalVisible(false);
+                }}
+            />
+
             {/* Nightmode toggle & lights notification*/}
             <View style={{flexDirection: 'row', justifyContent: 'flex-start',position: 'absolute',top: 50, left: 50,}}
             >
@@ -200,7 +240,12 @@ export default function MapScreen({ nightMode, setNightMode }) {
             </View>
 
             {/* Layer control*/}
-            <BottomNavigation value={visibleLayers} onChange={toggleLayer} nightMode={nightMode} />
+            <BottomNavigation
+                value={visibleLayers}
+                onChange={toggleLayer}
+                nightMode={nightMode}
+                onOpenFilters={() => setModalVisible(true)}
+            />
 
         </View>
         );

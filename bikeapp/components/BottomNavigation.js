@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { ToggleButton } from 'react-native-paper';
 
-export default function BottomNavigation({ value, onChange, nightMode }) {
-    const activeColor = nightMode ? 'rgba(250,250,250,0.3)' :'rgba(100,100,100,0.3)';
+export default function BottomNavigation({ value, onChange, nightMode, onOpenFilters }) {
+    const activeColor = nightMode ? 'rgba(200,200,200,0.4)' :'rgba(100,100,100,0.4)';
 
     return (
         <View style={styles.container}>
@@ -34,13 +34,19 @@ export default function BottomNavigation({ value, onChange, nightMode }) {
                 style={{backgroundColor: value.parking ? activeColor  : 'transparent'}}
             />
             <ToggleButton
-                icon="map"
+                icon="filter"
                 value="paths"
-                status={value.paths ? 'checked' : 'unchecked'}
-                onPress={() => onChange('paths')}
-                style={{backgroundColor: value.paths ? activeColor  : 'transparent'}}
+                status={value.paths ? 'unchecked' : 'unchecked'}
+                onPress={() => {
+                    onChange('paths');
+                    onOpenFilters();
+                }}
+                iconColor={activeColor}
             />
+
         </View>
+
+
     );
 }
 
