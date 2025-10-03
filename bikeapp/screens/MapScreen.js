@@ -1,6 +1,6 @@
 // package imports
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, ActivityIndicator, Text, Modal, Button } from 'react-native';
+import { StyleSheet, View, ActivityIndicator, Text, Modal, Button, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Switch } from 'react-native-switch';
@@ -23,7 +23,7 @@ import { postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchFiltere
 import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
 
 
-export default function MapScreen({ nightMode, setNightMode }) {
+export default function MapScreen({ navigation, nightMode, setNightMode }) {
     const mapRef = useRef(null);
 
     // state variables
@@ -247,6 +247,13 @@ export default function MapScreen({ nightMode, setNightMode }) {
                 onOpenFilters={() => setModalVisible(true)}
             />
 
+            <TouchableOpacity style={styles.routeButton} onPress={() => navigation.navigate('Route')}>
+                <Text style={styles.routeButtonText}>Plan Route</Text>
+            </TouchableOpacity>
+
+
+
+
         </View>
         );
     }
@@ -254,4 +261,16 @@ export default function MapScreen({ nightMode, setNightMode }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+  routeButton: {
+    bottom: 100, 
+    backgroundColor: "#1E90FF",
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  routeButtonText:{
+    color: "white",
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });
