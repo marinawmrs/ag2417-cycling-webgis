@@ -1,8 +1,11 @@
+// package imports
 import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, ActivityIndicator, Text, Modal, Button } from 'react-native';
-import { TouchableOpacity } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { Switch } from 'react-native-switch';
+import { Snackbar } from 'react-native-paper';
+import * as turf from '@turf/turf';
 
 import config from '../conn.json';
 
@@ -10,194 +13,245 @@ import config from '../conn.json';
 import PumpDetailsModal from '../components/PumpDetailsModal';
 import PumpMarkers from '../components/PumpMarkers';
 import ParkingMarkers from '../components/ParkingMarkers';
+import LightsMarkers from '../components/LightsMarkers';
 import BottomNavigation from '../components/BottomNavigation';
+import FilterModal from '../components/FilterModal';
 
-export default function MapScreen() {
-  const mapRef = useRef(null);
-  const [pumps, setPumps] = useState([]);
-  const [parkings, setParkings] = useState([]);
-  const [bikePaths, setBikePaths] = useState([]);
-  const [loadingPumps, setLoadingPumps] = useState(true);
-  const [loadingParkings, setLoadingParkings] = useState(true);
+// helper/fetching functions
+import {fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights} from '../utils/fetchMapData';
+import { postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchFilteredPumps } from '../utils/fetchRatings';
+import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
 
-  const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: false, paths: false });
 
-  function toggleLayer(layer) {
-    setVisibleLayers(function(prev) {
-    const updated = {
-        pumps: prev.pumps,
-        parking: prev.parking,
-        paths: prev.paths,
-    };
-    updated[layer] = !prev[layer];
-    return updated;
-    });
- }
+export default function MapScreen({ nightMode, setNightMode }) {
+    const mapRef = useRef(null);
 
-  const [selectedFeature, setSelectedFeature] = useState(null);
-  const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
-  const [averageBikepump, setAverageBikepump] = useState(null);
-  const [bikeparkRatings, setBikeparkRatings] = useState({ working_status: null, vibe_rating: null });
-  const [averageBikepark, setAverageBikepark] = useState(null);
+    // state variables
+    const [pumps, setPumps] = useState([]);
+    const [parkings, setParkings] = useState([]);
+    const [lights, setLights] = useState([]);
+    const [darkNotifVisible, setDarkNotifVisible] = useState(true);
+    const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: false, paths: false, distance: 5, rating: 0});
+    const [selectedFeature, setSelectedFeature] = useState(null);
+    const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
+    const [bikeparkRatings, setBikeparkRatings] = useState({ working_status: null, vibe_rating: null });
+    const [averageBikepump, setAverageBikepump] = useState(null);
+    const [averageBikepark, setAverageBikepark] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
 
-//  // fetch wfs geojson
-//  useEffect(() => {
-//    fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_wfs_data`)
-//      .then(res => res.json())
-//      .then(data => {
-//        if (data?.features) {
-//          setBikePaths(data.features);
-//        } else {
-//          console.error('Unexpected WFS:', data);
-//        }
-//      })
-//      .catch(err => console.error('Error fetching WFS :', err))
-//  }, []);
+    // visibility toggles for "layers"
+    function toggleLayer(layer) {
+        setVisibleLayers(function(prev) {
+            const updated = {
+                pumps: prev.pumps,
+                parking: prev.parking,
+                paths: prev.paths,
+                distance: prev.distance,
+                rating: prev.rating
+            };
+            updated[layer] = !prev[layer];
+            return updated;
+        });
+    }
 
-//  // fetch geojson for all bike pumps
-//  useEffect(() => {
-//    fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson`)
-//      .then(res => res.json())
-//      .then(data => {
-//        if (data?.features) {
-//          setPumps(data.features);
-//        } else if (data[0]?.row_to_json?.features) {
-//          setPumps(data[0].row_to_json.features);
-//        } else {
-//          console.error('Unexpected GeoJSON structure:', data);
-//        }
-//      })
-//      .catch(err => console.error('Error fetching pumps:', err))
-//      .finally(() => setLoadingPumps(false));
-//  }, []);
+    // dismissing dark mode lights notification
+    const onDismissDarkNotif = () => setDarkNotifVisible(false);
 
-  // fetch geojson for bike parking spots (x closest)
+    // submit & update pump rating
+    async function submitBikepumpRating() {
+        try {
+            console.log(selectedFeature.properties)
+            await postBikepumpRating(selectedFeature.properties.fid, bikepumpRatings);
+            alert('Rating submitted!');
+            setBikepumpRatings({ working_status: null, vibe_rating: null });
+        } catch (err) {
+            console.error(err);
+            alert('Error submitting rating ');
+        }
+    }
+
+    // fetch new pumps & parkings based on filters
+    async function applyFilters() {
+        try {
+            let location = await Location.getCurrentPositionAsync({});
+            const { latitude, longitude } = location.coords;
+            if (visibleLayers.pumps) {
+                const filteredPumps = await fetchFilteredPumps(longitude, latitude, visibleLayers.distance, visibleLayers.rating);
+                setPumps(filteredPumps);
+            } else {
+                setPumps([]);
+            }
+
+//            if (visibleLayers.parking) {
+//                TODO: write server-side for parking once rating is done
+//                setParkings(data.features || []);
+//            } else {
+//                setParkings([]);
+//            }
+
+        } catch (err) {
+            console.error('Error fetching filtered data:', err);
+        }
+    }
+
+
     useEffect(() => {
         (async () => {
-            // get location
+            // get user location
             let locationPermission = await Location.requestForegroundPermissionsAsync();
             if (locationPermission.status !=='granted'){
-                console.error('Location permission denied.');
-                return;
+            console.error('Location permission denied.');
+            return;
             }
             let location = await Location.getCurrentPositionAsync({});
+            const { latitude, longitude } = location.coords;
 
-            // get x closest pumps
-            const pumpsRes = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson_closest?lon=${location.coords.longitude}&lat=${location.coords.latitude}`);
-            const pumpsData = await pumpsRes.json();
-            if (pumpsData?.features) {
-                setPumps(pumpsData.features);
-            } else if (pumpsData[0]?.row_to_json?.features) {
-                setPumps(parkingData[0].row_to_json.features);
-            } else {
-                console.error('Unexpected pumps GeoJSON:', pumpsData);
+            // check for daylight/nightmode
+            try {
+                const { sunRise, sunSet } = await fetchTwilightTimes(latitude, longitude);
+                const now = new Date();
+                const isDay = now >= sunRise && now <= sunSet;
+                setNightMode(!isDay);
+                console.log('Twilight start & end today:', sunRise, sunSet)
+            } catch (e) {
+                console.error(e);
             }
-            setLoadingPumps(false);
 
-            // get x closest parking
-            const parkingRes = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_parking_geojson_closest?lon=${location.coords.longitude}&lat=${location.coords.latitude}`);
-            const parkingData = await parkingRes.json();
-            if (parkingData?.features) {
-                setParkings(parkingData.features);
-            } else if (parkingData[0]?.row_to_json?.features) {
-                setParkings(parkingData[0].row_to_json.features);
-            } else {
-                console.error('Unexpected parking GeoJSON:', parkingData);
+            // get pumps and parking data
+            try {
+                const pumpsData = await fetchPumps(latitude, longitude);
+                setPumps(pumpsData);
+                const parkingsData = await fetchParkings(latitude, longitude);
+                setParkings(parkingsData);
+
+                // get bounding box of pumps & parking locations
+                const fetchedPointsColl = turf.featureCollection([...pumps, ...parkings])
+                const fetchedPointsBbox = turf.bbox(fetchedPointsColl);
+
+                // lights
+//                const lightsData = await fetchLights(fetchedPointsColl, fetchedPointsBbox );
+//                setLights(lightsData);
+            } catch (e) {
+                console.error('Error fetching map (pumps, parkings, lights) data:', e);
             }
-            setLoadingParkings(false);
 
         })();
     }, []);
 
-  async function submitBikepumpRating() {
-    try {
-      await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/rate_pump`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pump_id: selectedFeature.properties.fid,
-          working_status: bikepumpRatings.working_status,
-          vibe_rating: bikepumpRatings.vibe_rating,
-        }),
-      });
-      alert('Rating submitted!');
-      setBikepumpRatings({ working_status: null, vibe_rating: null });
-    } catch (err) {
-      console.error('Error submitting bike-pump rating:', err);
-      alert('Error submitting rating');
+    return (
+        <View style={styles.container}>
+            {/* Map view*/}
+            <MapView
+                ref={mapRef}
+                style={styles.map}
+                userInterfaceStyle ={nightMode ? 'dark' : 'light'} // works for ios
+                customMapStyle={nightMode ? darkMapStyle : lightMapStyle}
+                initialRegion={{
+                latitude: 59.324608,
+                longitude: 18.06736,
+                latitudeDelta: 0.1,
+                longitudeDelta: 0.1,
+                }}
+                showsUserLocation
+                showsMyLocationButton
+            >
+
+                {/* Layer with lights*/}
+                {nightMode && (<LightsMarkers lights={lights} />)}
+
+                {/* Layer with pumps*/}
+                {visibleLayers.pumps && (
+                    <PumpMarkers
+                        pumps={pumps}
+                        onSelect={(feature) => {
+                            setSelectedFeature(feature);
+                            fetchPumpAverage(feature.properties.fid).then(setAverageBikepump);
+                        }}
+                    />
+                )}
+
+                {/* Layer with parkings*/}
+                {visibleLayers.parking && (
+                <ParkingMarkers
+                    parkings={parkings}
+                    onSelect={(feature) => {
+                        setSelectedFeature(feature);
+                        fetchParkingAverage(feature.properties.fid).then(setAverageBikepark);
+                    }}
+                />
+                )}
+
+            </MapView>
+
+            {/* Modal for pumps*/}
+            <PumpDetailsModal
+                visible={!!selectedFeature}
+                feature={selectedFeature}
+                averageBikepump={averageBikepump}
+                bikepumpRatings={bikepumpRatings}
+                setBikepumpRatings={setBikepumpRatings}
+                onSubmit={submitBikepumpRating}
+                onClose={() => {
+                    setSelectedFeature(null);
+                    setAverageBikepump(null);
+                    setBikepumpRatings({ working_status: null, vibe_rating: null });
+                }}
+            />
+
+            {/* Modal for filter selection*/}
+            <FilterModal
+                visible={modalVisible}
+                onDismiss={() => setModalVisible(false)}
+                visibleLayers={visibleLayers}
+                setVisibleLayers={setVisibleLayers}
+                onApply={() => {
+                    applyFilters();
+                    setModalVisible(false);
+                }}
+            />
+
+            {/* Nightmode toggle & lights notification*/}
+            <View style={{flexDirection: 'row', justifyContent: 'flex-start',position: 'absolute',top: 50, left: 50,}}
+            >
+                <Switch
+                    value={nightMode}
+                    onValueChange={() => setNightMode(prev => !prev)}
+                    disabled={false}
+                    activeText={"🌙"}
+                    inActiveText={"☀️"}
+                    backgroundActive={'#7475b6'}
+                    backgroundInactive={'#c9ebff'}
+                />
+            </View>
+            <View style={{
+                bottom: '50%',
+                left: '10%',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <Snackbar
+                    visible={nightMode && darkNotifVisible}
+                    onDismiss = {onDismissDarkNotif}
+                    action={{label: 'Hide'}}
+                    style={{width: '80%'}}
+                >
+                    💡🔦 Remember to turn your bike lights on!
+                </Snackbar>
+            </View>
+
+            {/* Layer control*/}
+            <BottomNavigation
+                value={visibleLayers}
+                onChange={toggleLayer}
+                nightMode={nightMode}
+                onOpenFilters={() => setModalVisible(true)}
+            />
+
+        </View>
+        );
     }
-  }
-
-  return (
-    <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        initialRegion={{
-          latitude: 59.324608,
-          longitude: 18.06736,
-          latitudeDelta: 0.1,
-          longitudeDelta: 0.1,
-        }}
-        showsUserLocation
-        showsMyLocationButton
-      >
-        {visibleLayers.pumps && (
-            <PumpMarkers
-              pumps={pumps}
-              onSelect={(feature) => {
-                setSelectedFeature(feature);
-                fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/pump_average/${feature.properties.fid}`)
-                  .then((res) => res.json())
-                  .then(setAverageBikepump)
-                  .catch((err) => console.error('Error fetching bikepump average:', err));
-              }}
-            />
-        )}
-
-        {visibleLayers.parking && (
-            <ParkingMarkers
-              parkings={parkings}
-              onSelect={(feature) => {
-                setSelectedFeature(feature);
-                fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/parking_average/${feature.properties.fid}`)
-                  .then((res) => res.json())
-                  .then(setAverageBikepark)
-                  .catch((err) => console.error('Error fetching parking spot average:', err));
-              }}
-            />
-        )}
-
-      </MapView>
-
-      <PumpDetailsModal
-        visible={!!selectedFeature}
-        feature={selectedFeature}
-        averageBikepump={averageBikepump}
-        bikepumpRatings={bikepumpRatings}
-        setBikepumpRatings={setBikepumpRatings}
-        onSubmit={submitBikepumpRating}
-        onClose={() => {
-          setSelectedFeature(null);
-          setAverageBikepump(null);
-          setBikepumpRatings({ working_status: null, vibe_rating: null });
-        }}
-      />
-
-      <BottomNavigation value={visibleLayers} onChange={toggleLayer} />
-
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  loader: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginLeft: -25,
-    marginTop: -25,
-  },
 });
