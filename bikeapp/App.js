@@ -4,13 +4,35 @@ import MapView, { Marker } from 'react-native-maps';
 import { Provider as PaperProvider, DarkTheme as PaperDark, DefaultTheme as PaperLight } from "react-native-paper";
 import MapScreen from './screens/MapScreen';
 
+import RouteScreen from "./screens/RouteScreen";
+
+import { createStackNavigator } from "@react-navigation/stack";
+import { NavigationContainer } from '@react-navigation/native';
+
+const Stack = createStackNavigator();
+
 
 export default function HomeScreen() {
     const [darkMode, setDarkMode] = React.useState(false);
 
     return (
         <PaperProvider theme={darkMode ? PaperDark : PaperLight}>
-            <MapScreen nightMode={darkMode} setNightMode={setDarkMode} />
+          <NavigationContainer>
+            <Stack.Navigator>
+            <Stack.Screen name="Map">
+              {(props) => (
+                <MapScreen {...props} nightMode={darkMode} setNightMode={setDarkMode} />
+              )}
+            </Stack.Screen>
+
+            <Stack.Screen name="Route">
+              {(props) => (
+                <RouteScreen {...props} nightMode={darkMode} setNightMode={setDarkMode} />
+              )}
+            </Stack.Screen>
+            </Stack.Navigator>
+          </NavigationContainer>
+
         </PaperProvider>
     );
 
