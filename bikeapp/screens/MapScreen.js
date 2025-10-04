@@ -23,6 +23,9 @@ import { fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights } from '../u
 import { postBikeparkRating, postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchFilteredPumps } from '../utils/fetchRatings';
 import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
 
+//import hooks
+import useSnackbar from '../hooks/useSnackbar';
+
 
 export default function MapScreen({ navigation, nightMode, setNightMode }) {
     const mapRef = useRef(null);
@@ -41,6 +44,20 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedFeatureType, setSelectedFeatureType] = useState(null);
 
+    const {
+        visible: snackbarVisible,
+        message: snackbarMessage,
+        type: snackbarType,
+        showSnackbar,
+        dismissSnackbar
+    } = useSnackbar();
+
+   
+    useEffect(() => {
+        console.log('Snackbar visible changed:', snackbarVisible);
+      }, [snackbarVisible]);
+      
+      
 
     // visibility toggles for "layers"
     function toggleLayer(layer) {
@@ -58,14 +75,16 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
     }
 
     // dismissing dark mode lights notification
-    const onDismissDarkNotif = () => setDarkNotifVisible(false);
+    //const onDismissDarkNotif = () => setDarkNotifVisible(false);
 
     // submit & update pump rating
     async function submitBikepumpRating() {
         try {
             console.log(selectedFeature.properties)
             await postBikepumpRating(selectedFeature.properties.fid, bikepumpRatings);
-            alert('Rating submitted!');
+            setSelectedFeature(null); 
+            //alert('Rating submitted!');
+            showSnackbar('✅ Rating submitted!', 'success');
             setBikepumpRatings({ working_status: null, vibe_rating: null });
         } catch (err) {
             console.error(err);
@@ -77,7 +96,9 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
         try {
             console.log(selectedFeature.properties)
             await postBikeparkRating(selectedFeature.properties.fid, bikeparkRatings);
-            alert('Rating submitted!');
+            setSelectedFeature(null); 
+            //alert('Rating submitted!');
+            showSnackbar('✅ Rating submitted!', 'success');
             setBikeparkRatings({ safety_rating: null, availability_rating: null, vibe_rating: null });
         } catch (err) {
             console.error(err);
@@ -151,7 +172,13 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
 
         })();
     }, []);
-
+    useEffect(() => {
+        if (nightMode && darkNotifVisible) {
+          showSnackbar('💡🔦 Remember to turn your bike lights on!', 'night');
+          setDarkNotifVisible(false);
+        }
+      }, [nightMode]);
+      
     return (
         <View style={styles.container}>
             {/* Map view*/}
@@ -269,21 +296,33 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                     backgroundInactive={'#c9ebff'}
                 />
             </View>
+            
+
             <View style={{
-                bottom: '50%',
+                //position: 'absolute',
+                bottom: '40%',
                 left: '10%',
                 alignItems: 'center',
                 justifyContent: 'center'
             }}>
                 <Snackbar
-                    visible={nightMode && darkNotifVisible}
-                    onDismiss={onDismissDarkNotif}
-                    action={{ label: 'Hide' }}
-                    style={{ width: '80%' }}
+                    visible={snackbarVisible}
+                    onDismiss={dismissSnackbar}
+                    duration={3000}
+                    style={{
+                        width: '80%',
+                        backgroundColor:
+                            snackbarType === 'success' ? '#4CAF50' :
+                                snackbarType === 'error' ? '#F44336' :
+                                snackbarType === 'night' ?  '#323232':
+
+                                    '#2196F3'
+                    }}
                 >
-                    💡🔦 Remember to turn your bike lights on!
+                    {snackbarMessage}
                 </Snackbar>
             </View>
+
 
             {/* Layer control*/}
             <BottomNavigation
