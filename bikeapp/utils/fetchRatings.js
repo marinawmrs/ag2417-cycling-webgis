@@ -12,13 +12,27 @@ export async function postBikepumpRating(pumpId, bikepumpRatings) {
     });
 }
 
+export async function postBikeparkRating(parkingId, bikeparkRatings) {
+    await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/rate_parkering`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ //parking_id, safety_rating, vibe_rating, availability_rating
+            parking_id: parkingId,
+            safety_rating: bikeparkRatings.safety_rating,
+            vibe_rating: bikeparkRatings.vibe_rating,
+            availability_rating: bikeparkRatings.availability_rating,
+        }),
+    });
+}
+
+
 export async function fetchPumpAverage(fid) {
     const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/pump_average/${fid}`);
     return res.json();
 }
 
 export async function fetchParkingAverage(fid) {
-    const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/parking_average/${fid}`);
+    const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/parkering_average/${fid}`);
     return res.json();
 }
 

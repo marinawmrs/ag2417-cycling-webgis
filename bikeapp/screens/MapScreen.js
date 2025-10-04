@@ -11,6 +11,7 @@ import config from '../conn.json';
 
 // components
 import PumpDetailsModal from '../components/PumpDetailsModal';
+import ParkDetailsModal from '../components/ParkDetailsModal';
 import PumpMarkers from '../components/PumpMarkers';
 import ParkingMarkers from '../components/ParkingMarkers';
 import LightsMarkers from '../components/LightsMarkers';
@@ -18,8 +19,8 @@ import BottomNavigation from '../components/BottomNavigation';
 import FilterModal from '../components/FilterModal';
 
 // helper/fetching functions
-import {fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights} from '../utils/fetchMapData';
-import { postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchFilteredPumps } from '../utils/fetchRatings';
+import { fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights } from '../utils/fetchMapData';
+import { postBikeparkRating, postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchFilteredPumps } from '../utils/fetchRatings';
 import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
 
 
@@ -31,17 +32,19 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
     const [parkings, setParkings] = useState([]);
     const [lights, setLights] = useState([]);
     const [darkNotifVisible, setDarkNotifVisible] = useState(true);
-    const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: false, paths: false, distance: 5, rating: 0});
+    const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: true, paths: false, distance: 5, rating: 0 });
     const [selectedFeature, setSelectedFeature] = useState(null);
     const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
-    const [bikeparkRatings, setBikeparkRatings] = useState({ working_status: null, vibe_rating: null });
+    const [bikeparkRatings, setBikeparkRatings] = useState({ safety_rating: null, availability_rating: null, vibe_rating: null })
     const [averageBikepump, setAverageBikepump] = useState(null);
     const [averageBikepark, setAverageBikepark] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [selectedFeatureType, setSelectedFeatureType] = useState(null);
+
 
     // visibility toggles for "layers"
     function toggleLayer(layer) {
-        setVisibleLayers(function(prev) {
+        setVisibleLayers(function (prev) {
             const updated = {
                 pumps: prev.pumps,
                 parking: prev.parking,
@@ -70,6 +73,17 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
         }
     }
 
+    async function submitBikeparkRating() {
+        try {
+            console.log(selectedFeature.properties)
+            await postBikeparkRating(selectedFeature.properties.fid, bikeparkRatings);
+            alert('Rating submitted!');
+            setBikeparkRatings({ safety_rating: null, availability_rating: null, vibe_rating: null });
+        } catch (err) {
+            console.error(err);
+            alert('Error submitting rating ');
+        }
+    }
     // fetch new pumps & parkings based on filters
     async function applyFilters() {
         try {
@@ -82,12 +96,12 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                 setPumps([]);
             }
 
-//            if (visibleLayers.parking) {
-//                TODO: write server-side for parking once rating is done
-//                setParkings(data.features || []);
-//            } else {
-//                setParkings([]);
-//            }
+            //            if (visibleLayers.parking) {
+            //                TODO: write server-side for parking once rating is done
+            //                setParkings(data.features || []);
+            //            } else {
+            //                setParkings([]);
+            //            }
 
         } catch (err) {
             console.error('Error fetching filtered data:', err);
@@ -99,9 +113,9 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
         (async () => {
             // get user location
             let locationPermission = await Location.requestForegroundPermissionsAsync();
-            if (locationPermission.status !=='granted'){
-            console.error('Location permission denied.');
-            return;
+            if (locationPermission.status !== 'granted') {
+                console.error('Location permission denied.');
+                return;
             }
             let location = await Location.getCurrentPositionAsync({});
             const { latitude, longitude } = location.coords;
@@ -129,8 +143,8 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                 const fetchedPointsBbox = turf.bbox(fetchedPointsColl);
 
                 // lights
-//                const lightsData = await fetchLights(fetchedPointsColl, fetchedPointsBbox );
-//                setLights(lightsData);
+                //                const lightsData = await fetchLights(fetchedPointsColl, fetchedPointsBbox );
+                //                setLights(lightsData);
             } catch (e) {
                 console.error('Error fetching map (pumps, parkings, lights) data:', e);
             }
@@ -144,13 +158,13 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
             <MapView
                 ref={mapRef}
                 style={styles.map}
-                userInterfaceStyle ={nightMode ? 'dark' : 'light'} // works for ios
+                userInterfaceStyle={nightMode ? 'dark' : 'light'} // works for ios
                 customMapStyle={nightMode ? darkMapStyle : lightMapStyle}
                 initialRegion={{
-                latitude: 59.324608,
-                longitude: 18.06736,
-                latitudeDelta: 0.1,
-                longitudeDelta: 0.1,
+                    latitude: 59.324608,
+                    longitude: 18.06736,
+                    latitudeDelta: 0.1,
+                    longitudeDelta: 0.1,
                 }}
                 showsUserLocation
                 showsMyLocationButton
@@ -165,38 +179,70 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                         pumps={pumps}
                         onSelect={(feature) => {
                             setSelectedFeature(feature);
-                            fetchPumpAverage(feature.properties.fid).then(setAverageBikepump);
+                            setSelectedFeatureType('pump');
+                            fetchPumpAverage(feature.properties.fid)
+                                .then((avg) => {
+                                    console.log('averageBikepump-lala', avg);
+                                    setAverageBikepump(avg);
+                                });
+
                         }}
                     />
                 )}
 
                 {/* Layer with parkings*/}
                 {visibleLayers.parking && (
-                <ParkingMarkers
-                    parkings={parkings}
-                    onSelect={(feature) => {
-                        setSelectedFeature(feature);
-                        fetchParkingAverage(feature.properties.fid).then(setAverageBikepark);
-                    }}
-                />
+                    <ParkingMarkers
+                        parkings={parkings}
+                        onSelect={(feature) => {
+                            setSelectedFeature(feature);
+                            setSelectedFeatureType('parking');
+                            fetchParkingAverage(feature.properties.fid)
+                                .then((avg) => {
+                                    console.log('averageBikepark:', avg); // ← Debug-Ausgabe
+                                    setAverageBikepark(avg);
+                                });
+                        }}
+                    />
                 )}
 
             </MapView>
 
-            {/* Modal for pumps*/}
-            <PumpDetailsModal
-                visible={!!selectedFeature}
-                feature={selectedFeature}
-                averageBikepump={averageBikepump}
-                bikepumpRatings={bikepumpRatings}
-                setBikepumpRatings={setBikepumpRatings}
-                onSubmit={submitBikepumpRating}
-                onClose={() => {
-                    setSelectedFeature(null);
-                    setAverageBikepump(null);
-                    setBikepumpRatings({ working_status: null, vibe_rating: null });
-                }}
-            />
+            {/* Modal for pumps */}
+            {selectedFeatureType === 'pump' && selectedFeature && (
+                <PumpDetailsModal
+                    visible={true}
+                    feature={selectedFeature}
+                    averageBikepump={averageBikepump}
+                    bikepumpRatings={bikepumpRatings}
+                    setBikepumpRatings={setBikepumpRatings}
+                    onSubmit={submitBikepumpRating}
+                    onClose={() => {
+                        setSelectedFeature(null);
+                        setSelectedFeatureType(null);
+                        setAverageBikepump(null);
+                        setBikepumpRatings({ working_status: null, vibe_rating: null });
+                    }}
+                />
+            )}
+
+            {/* Modal for parkings */}
+            {selectedFeatureType === 'parking' && selectedFeature && (
+                <ParkDetailsModal
+                    visible={true}
+                    feature={selectedFeature}
+                    averageBikepark={averageBikepark}
+                    bikeparkRatings={bikeparkRatings}
+                    setBikeparkRatings={setBikeparkRatings}
+                    onSubmit={submitBikeparkRating}
+                    onClose={() => {
+                        setSelectedFeature(null);
+                        setSelectedFeatureType(null);
+                        setAverageBikepark(null);
+                        setBikeparkRatings({ safety_rating: null, availability_rating: null, vibe_rating: null });
+                    }}
+                />
+            )}
 
             {/* Modal for filter selection*/}
             <FilterModal
@@ -211,7 +257,7 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
             />
 
             {/* Nightmode toggle & lights notification*/}
-            <View style={{flexDirection: 'row', justifyContent: 'flex-start',position: 'absolute',top: 50, left: 50,}}
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-start', position: 'absolute', top: 50, left: 50, }}
             >
                 <Switch
                     value={nightMode}
@@ -231,9 +277,9 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
             }}>
                 <Snackbar
                     visible={nightMode && darkNotifVisible}
-                    onDismiss = {onDismissDarkNotif}
-                    action={{label: 'Hide'}}
-                    style={{width: '80%'}}
+                    onDismiss={onDismissDarkNotif}
+                    action={{ label: 'Hide' }}
+                    style={{ width: '80%' }}
                 >
                     💡🔦 Remember to turn your bike lights on!
                 </Snackbar>
@@ -255,22 +301,22 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
 
 
         </View>
-        );
-    }
+    );
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { flex: 1 },
-  routeButton: {
-    bottom: 100, 
-    backgroundColor: "#1E90FF",
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  routeButtonText:{
-    color: "white",
-    fontWeight: "700",
-    fontSize: 16,
-  },
+    container: { flex: 1 },
+    map: { flex: 1 },
+    routeButton: {
+        bottom: 100,
+        backgroundColor: "#1E90FF",
+        paddingVertical: 12,
+        borderRadius: 12,
+        alignItems: "center",
+    },
+    routeButtonText: {
+        color: "white",
+        fontWeight: "700",
+        fontSize: 16,
+    },
 });

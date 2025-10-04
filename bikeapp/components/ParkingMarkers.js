@@ -2,7 +2,7 @@ import React from 'react';
 import { Marker } from 'react-native-maps';
 import { Image } from 'react-native';
 
-export default function ParkingMarkers({ parkings }) {
+export default function ParkingMarkers({ parkings ,onSelect}) {
   return (
     <>
       {parkings.map((feature, index) => {
@@ -13,6 +13,9 @@ export default function ParkingMarkers({ parkings }) {
             coordinate={{ latitude: lat, longitude: lon }}
             title={feature.properties?.name || 'Bicycle Parking'}
             description={"Number of spots: " + (feature.properties?.num_spots || 'N/A')}
+            onPress={() => {
+              onSelect(feature);
+            }}
             pinColor="blue"
           >
               <Image
