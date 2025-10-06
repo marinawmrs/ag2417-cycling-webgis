@@ -26,7 +26,7 @@ export default function ParkDetailsModal({
                                 Ratings (last 10 weeks):
                             </Text>
                             <Text>Safety: {averageBikepark.avg_safety}</Text>
-                            <Text>Availabilty: {averageBikepark.avg_availability}</Text>
+                            <Text>Availability: {averageBikepark.avg_availability}</Text>
                             <Text>Vibe: {averageBikepark.avg_vibe}</Text>
 
                             <Text style={{ marginTop: 10, fontWeight: 'bold' }}>

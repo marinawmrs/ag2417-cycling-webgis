@@ -1,5 +1,5 @@
 // darkmode mapstyle for Android
-const darkMapStyle = [
+export const darkMapStyle = [
       { elementType: "geometry", stylers: [{ color: "#212121" }] },
       { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
       { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
@@ -8,4 +8,4 @@ const darkMapStyle = [
       { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
   ];
 
-const lightMapStyle = []
+export const lightMapStyle = []

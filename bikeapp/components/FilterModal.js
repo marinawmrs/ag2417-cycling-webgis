@@ -62,6 +62,34 @@ export default function FilterModal({ visible, onDismiss, visibleLayers, setVisi
                             />
                         </View>
 
+                        {visibleLayers.parking &&
+                            (<View>
+                                <View style={styles.section}>
+                                    <Text>Filter by average parking safety: { visibleLayers.safety.toFixed(2)}</Text>
+                                    <Slider
+                                        style={{ width: '100%' }}
+                                        minimumValue={0}
+                                        maximumValue={5}
+                                        step={1}
+                                        value={ visibleLayers.safety}
+                                        onValueChange={(val) => setVisibleLayers((prev) => ({ ...prev, safety: val }))}
+                                    />
+                                </View>
+                                <View style={styles.section}>
+                                    <Text>Filter by average parking availability: { visibleLayers.availability.toFixed(2)}</Text>
+                                    <Slider
+                                        style={{ width: '100%' }}
+                                        minimumValue={0}
+                                        maximumValue={5}
+                                        step={1}
+                                        value={ visibleLayers.availability}
+                                        onValueChange={(val) => setVisibleLayers((prev) => ({ ...prev, availability: val }))}
+                                    />
+                                </View>
+                            </View>
+                            )
+                        }
+
                         <View style={styles.row}>
                             <Button onPress={onDismiss}>Cancel</Button>
                             <Button

@@ -25,7 +25,6 @@ export async function postBikeparkRating(parkingId, bikeparkRatings) {
     });
 }
 
-
 export async function fetchPumpAverage(fid) {
     const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/pump_average/${fid}`);
     return res.json();
@@ -40,5 +39,13 @@ export async function fetchFilteredPumps(longitude, latitude, distance, rating) 
     const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson_filtered?lon=${longitude}&lat=${latitude}&distance=${distance}&rating=${rating}`);
     const data = await res.json();
     if (!res.ok) throw new Error('Error fetching filtered pumps');
+    return data.features || [];
+}
+
+export async function fetchFilteredParkings(longitude, latitude, distance, rating, safety, availability) {
+    const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_parkings_geojson_filtered?lon=${longitude}&lat=${latitude}&distance=${distance}&rating=${rating}&safety=${safety}&availability=${availability}`);
+    console.log(res)
+    const data = await res.json();
+    if (!res.ok) throw new Error('Error fetching filtered parking');
     return data.features || [];
 }

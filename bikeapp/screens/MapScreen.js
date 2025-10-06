@@ -20,11 +20,9 @@ import FilterModal from '../components/FilterModal';
 
 // helper/fetching functions
 import { fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights } from '../utils/fetchMapData';
-import { postBikeparkRating, postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchFilteredPumps } from '../utils/fetchRatings';
+import { postBikeparkRating, postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchFilteredPumps, fetchFilteredParkings } from '../utils/fetchRatings';
 import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
-
-//import hooks
-import useSnackbar from '../hooks/useSnackbar';
+import useSnackbar from '../utils/useSnackbar';
 
 
 export default function MapScreen({ navigation, nightMode, setNightMode }) {
@@ -35,7 +33,7 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
     const [parkings, setParkings] = useState([]);
     const [lights, setLights] = useState([]);
     const [darkNotifVisible, setDarkNotifVisible] = useState(true);
-    const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: true, paths: false, distance: 5, rating: 0 });
+    const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: true, paths: false, distance: 5, rating: 0, safety: 0, availability: 0});
     const [selectedFeature, setSelectedFeature] = useState(null);
     const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
     const [bikeparkRatings, setBikeparkRatings] = useState({ safety_rating: null, availability_rating: null, vibe_rating: null })
@@ -56,8 +54,7 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
     useEffect(() => {
         console.log('Snackbar visible changed:', snackbarVisible);
       }, [snackbarVisible]);
-      
-      
+
 
     // visibility toggles for "layers"
     function toggleLayer(layer) {
@@ -67,7 +64,9 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                 parking: prev.parking,
                 paths: prev.paths,
                 distance: prev.distance,
-                rating: prev.rating
+                rating: prev.rating,
+                safety: prev.safety,
+                availability: prev.availability
             };
             updated[layer] = !prev[layer];
             return updated;
@@ -117,12 +116,12 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                 setPumps([]);
             }
 
-            //            if (visibleLayers.parking) {
-            //                TODO: write server-side for parking once rating is done
-            //                setParkings(data.features || []);
-            //            } else {
-            //                setParkings([]);
-            //            }
+            if (visibleLayers.parking) {
+                const filteredParkings = await fetchFilteredParkings(longitude, latitude, visibleLayers.distance, visibleLayers.rating, visibleLayers.safety, visibleLayers.availability);
+                setParkings(filteredParkings || []);
+            } else {
+                setParkings([]);
+            }
 
         } catch (err) {
             console.error('Error fetching filtered data:', err);
@@ -174,10 +173,10 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
     }, []);
     useEffect(() => {
         if (nightMode && darkNotifVisible) {
-          showSnackbar('💡🔦 Remember to turn your bike lights on!', 'night');
-          setDarkNotifVisible(false);
+            showSnackbar('💡🔦 Remember to turn your bike lights on!', 'night');
+            setDarkNotifVisible(false);
         }
-      }, [nightMode]);
+    }, [nightMode]);
       
     return (
         <View style={styles.container}>
@@ -336,9 +335,6 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                 <Text style={styles.routeButtonText}>Plan Route</Text>
             </TouchableOpacity>
 
-
-
-
         </View>
     );
 }
@@ -347,6 +343,9 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     map: { flex: 1 },
     routeButton: {
+        position: 'absolute',
+        left: 20,
+        right: 20,
         bottom: 100,
         backgroundColor: "#1E90FF",
         paddingVertical: 12,
