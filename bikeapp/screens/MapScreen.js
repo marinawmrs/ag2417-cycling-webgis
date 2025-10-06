@@ -331,7 +331,7 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                 onOpenFilters={() => setModalVisible(true)}
             />
 
-            <TouchableOpacity style={styles.routeButton} onPress={() => navigation.navigate('Route')}>
+            <TouchableOpacity style={styles.routeButton} onPress={() => navigation.navigate('Route', {nightMode})}>
                 <Text style={styles.routeButtonText}>Plan Route</Text>
             </TouchableOpacity>
 
