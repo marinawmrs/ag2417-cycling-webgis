@@ -27,7 +27,12 @@ module.exports = (pool) => {
         FROM cykelparkering_ratings
         WHERE parking_id = $1 AND created_at > NOW() - INTERVAL '10 weeks'
       `, [parking_id]);
-      res.json(result.rows[0]);
+      //res.json(result.rows[0]);
+      res.json({
+        avg_vibe: result.rows[0].avg_vibe,
+        avg_safety:result.rows[0].avg_safety,
+        avg_availability: result.rows[0].avg_availability
+      });
     } catch (err) {
       console.error('Error fetching averages:', err);
       res.status(500).json({ error: 'Database error' });

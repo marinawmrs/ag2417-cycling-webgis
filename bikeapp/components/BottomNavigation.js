@@ -4,6 +4,7 @@ import { ToggleButton } from 'react-native-paper';
 
 export default function BottomNavigation({ value, onChange, nightMode, onOpenFilters }) {
     const activeColor = nightMode ? 'rgba(200,200,200,0.4)' :'rgba(100,100,100,0.4)';
+    const activeColor_filter = nightMode ? 'rgba(200,200,200,0.8)' :'rgba(100,100,100,0.8)';
 
     return (
         <View style={styles.container}>
@@ -41,7 +42,7 @@ export default function BottomNavigation({ value, onChange, nightMode, onOpenFil
                     onChange('paths');
                     onOpenFilters();
                 }}
-                iconColor={activeColor}
+                iconColor={activeColor_filter}
             />
 
         </View>

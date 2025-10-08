@@ -5,6 +5,8 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import config from "../conn.json";
 
+import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
+
 /**
  * Start:
  *   - Current Location
@@ -16,7 +18,10 @@ import config from "../conn.json";
  * Route shows after both picked.
  */
 
-export default function RouteScreen() {
+export default function RouteScreen({route}) {
+  const nightMode = route?.params?.nightMode ?? false;
+  console.log(nightMode)
+
   const [start, setStart] = useState(null); // {latitude, longitude}
   const [end, setEnd] = useState(null);
   const [routeCoords, setRouteCoords] = useState([]); // LineString or MultiLineString
@@ -333,6 +338,8 @@ export default function RouteScreen() {
       <MapView
         ref={mapRef}
         style={styles.map}
+        userInterfaceStyle={nightMode ? 'dark' : 'light'} // works for ios
+        customMapStyle={nightMode ? darkMapStyle : lightMapStyle}
         onPress={onMapPress}
         initialRegion={{
           latitude: 59.3293,
