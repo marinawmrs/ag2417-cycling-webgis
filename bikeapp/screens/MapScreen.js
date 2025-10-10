@@ -335,6 +335,13 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                 <Text style={styles.routeButtonText}>Plan Route</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity
+        style={styles.statsButton}
+        onPress={() => navigation.navigate('Statistics')}
+      >
+        <Text style={styles.buttonText}>📊</Text>
+      </TouchableOpacity>
+
         </View>
     );
 }
@@ -357,4 +364,18 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         fontSize: 16,
     },
+    statsButton: {
+        position: 'absolute',
+        top: 70,
+        right: 12,
+        backgroundColor: '#1a73e8',
+        padding: 10,
+        borderRadius: 2,
+        elevation: 5
+      },
+      statsText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold'
+      },
 });

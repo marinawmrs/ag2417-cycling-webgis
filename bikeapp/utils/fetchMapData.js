@@ -31,3 +31,10 @@ export async function fetchLights(featureColl, bbox) {
     const data = await res.json();
     return data?.features || [];
 }
+
+export async function fetchParkings_all() {
+    const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_parking_geojson`);
+    const data = await res.json();
+    if (!data?.features) throw new Error('Unexpected parking GeoJSON');
+    return data.features;
+}

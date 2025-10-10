@@ -6,6 +6,8 @@ import MapScreen from './screens/MapScreen';
 
 import RouteScreen from "./screens/RouteScreen";
 
+import StatisticsScreen from './screens/StatisticsScreen';
+
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from '@react-navigation/native';
 
@@ -13,28 +15,34 @@ const Stack = createStackNavigator();
 
 
 export default function HomeScreen() {
-    const [darkMode, setDarkMode] = React.useState(false);
+  const [darkMode, setDarkMode] = React.useState(false);
 
-    return (
-        <PaperProvider theme={darkMode ? PaperDark : PaperLight}>
-          <NavigationContainer>
-            <Stack.Navigator>
-            <Stack.Screen name="Map">
-              {(props) => (
-                <MapScreen {...props} nightMode={darkMode} setNightMode={setDarkMode} />
-              )}
-            </Stack.Screen>
+  return (
+    <PaperProvider theme={darkMode ? PaperDark : PaperLight}>
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen name="Map">
+            {(props) => (
+              <MapScreen {...props} nightMode={darkMode} setNightMode={setDarkMode} />
+            )}
+          </Stack.Screen>
 
-            <Stack.Screen name="Route">
-              {(props) => (
-                <RouteScreen {...props} nightMode={darkMode} setNightMode={setDarkMode} />
-              )}
-            </Stack.Screen>
-            </Stack.Navigator>
-          </NavigationContainer>
+          <Stack.Screen name="Route">
+            {(props) => (
+              <RouteScreen {...props} nightMode={darkMode} setNightMode={setDarkMode} />
+            )}
+          </Stack.Screen>
 
-        </PaperProvider>
-    );
+          <Stack.Screen name="Statistics">
+            {(props) => (
+              <StatisticsScreen {...props} />
+            )}
+          </Stack.Screen>
+        </Stack.Navigator>
+      </NavigationContainer>
+
+    </PaperProvider>
+  );
 
 }
 
