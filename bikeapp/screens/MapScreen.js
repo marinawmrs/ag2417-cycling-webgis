@@ -1,5 +1,5 @@
 // package imports
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StyleSheet, View, ActivityIndicator, Text, Modal, Button, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -23,15 +23,16 @@ import { fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights } from '../u
 import { postBikeparkRating, postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchParkingAverage_hour, fetchFilteredPumps, fetchFilteredParkings } from '../utils/fetchRatings';
 import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
 import useSnackbar from '../utils/useSnackbar';
+import useNightMode from '../utils/useNightmode';
 
 
-export default function MapScreen({ navigation, nightMode, setNightMode }) {
+export default function MapScreen({ navigation }) {
     const mapRef = useRef(null);
 
     // state variables
+    const { nightMode, setNightMode, lights, handleRegionChangeComplete } = useNightMode();
     const [pumps, setPumps] = useState([]);
     const [parkings, setParkings] = useState([]);
-    const [lights, setLights] = useState([]);
     const [darkNotifVisible, setDarkNotifVisible] = useState(true);
     const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: true, paths: false, distance: 5, rating: 0, safety: 0, availability: 0});
     const [selectedFeature, setSelectedFeature] = useState(null);
@@ -46,7 +47,7 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
     const startHour = Math.floor(currentHour / 3) * 3; 
     const endHour = startHour + 3;                    
 
-
+    // snackbar initialisation
     const {
         visible: snackbarVisible,
         message: snackbarMessage,
@@ -55,10 +56,16 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
         dismissSnackbar
     } = useSnackbar();
 
-   
     useEffect(() => {
         console.log('Snackbar visible changed:', snackbarVisible);
       }, [snackbarVisible]);
+
+    useEffect(() => {
+        if (nightMode && darkNotifVisible) {
+            showSnackbar('💡🔦 Remember to turn your bike lights on!', 'night');
+            setDarkNotifVisible(false);
+        }
+    }, [nightMode]);
 
 
     // visibility toggles for "layers"
@@ -96,6 +103,7 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
         }
     }
 
+    // submit & update park rating
     async function submitBikeparkRating() {
         try {
             console.log(selectedFeature.properties)
@@ -145,44 +153,19 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
             let location = await Location.getCurrentPositionAsync({});
             const { latitude, longitude } = location.coords;
 
-            // check for daylight/nightmode
-            try {
-                const { sunRise, sunSet } = await fetchTwilightTimes(latitude, longitude);
-                const now = new Date();
-                const isDay = now >= sunRise && now <= sunSet;
-                setNightMode(!isDay);
-                console.log('Twilight start & end today:', sunRise, sunSet)
-            } catch (e) {
-                console.error(e);
-            }
-
             // get pumps and parking data
             try {
                 const pumpsData = await fetchPumps(latitude, longitude);
                 setPumps(pumpsData);
                 const parkingsData = await fetchParkings(latitude, longitude);
                 setParkings(parkingsData);
-
-                // get bounding box of pumps & parking locations
-                const fetchedPointsColl = turf.featureCollection([...pumps, ...parkings])
-                const fetchedPointsBbox = turf.bbox(fetchedPointsColl);
-
-                // lights
-                //                const lightsData = await fetchLights(fetchedPointsColl, fetchedPointsBbox );
-                //                setLights(lightsData);
             } catch (e) {
                 console.error('Error fetching map (pumps, parkings, lights) data:', e);
             }
-
         })();
     }, []);
-    useEffect(() => {
-        if (nightMode && darkNotifVisible) {
-            showSnackbar('💡🔦 Remember to turn your bike lights on!', 'night');
-            setDarkNotifVisible(false);
-        }
-    }, [nightMode]);
-      
+
+
     return (
         <View style={styles.container}>
             {/* Map view*/}
@@ -191,6 +174,7 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                 style={styles.map}
                 userInterfaceStyle={nightMode ? 'dark' : 'light'} // works for ios
                 customMapStyle={nightMode ? darkMapStyle : lightMapStyle}
+                onRegionChangeComplete={handleRegionChangeComplete}
                 initialRegion={{
                     latitude: 59.324608,
                     longitude: 18.06736,

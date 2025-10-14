@@ -14,9 +14,7 @@ router.get('/get_wfs_data_light', async (req, res) => {
     const [minX, minY, maxX, maxY] = bbox.split(',').map(Number);
     const cqlFilter = `BBOX(GEOMETRY, ${minX}, ${minY}, ${maxX}, ${maxY}, 'EPSG:4326')`;
 
-    const centroidsGeo = JSON.parse(decodeURIComponent(centroids));
-
-    const wfs_light_paths = `${wfs_base_url}Belysningsmontage_Punkt&srsName=EPSG:4326&outputFormat=application/json&CQL_FILTER=${encodeURIComponent(cqlFilter)}&maxFeatures=200`;
+    const wfs_light_paths = `${wfs_base_url}Belysningsmontage_Punkt&srsName=EPSG:4326&outputFormat=application/json&CQL_FILTER=${encodeURIComponent(cqlFilter)}&maxFeatures=100`;
     console.log(wfs_light_paths)
 
     try {
@@ -24,18 +22,20 @@ router.get('/get_wfs_data_light', async (req, res) => {
         if (!response.ok) throw new Error(`${response.status}`);
         const data = await response.json();
         console.log('WFS data received')
+        res.json(data)
 
-        const bufferedZones = centroidsGeo.features.map(center => {
-            const buffer = turf.buffer(center, 0.1, { units: 'kilometers' });
-            const pointsInside = turf.pointsWithinPolygon(data, buffer);
-            buffer.properties = {
-                ...center.properties,
-                lightCount: pointsInside.features.length
-            };
-            return buffer;
-        });
-        const bufferedFeatureCollection = turf.featureCollection(bufferedZones);
-        res.json(bufferedFeatureCollection);
+//        const centroidsGeo = JSON.parse(decodeURIComponent(centroids));
+//        const bufferedZones = centroidsGeo.features.map(center => {
+//            const buffer = turf.buffer(center, 0.1, { units: 'kilometers' });
+//            const pointsInside = turf.pointsWithinPolygon(data, buffer);
+//            buffer.properties = {
+//                ...center.properties,
+//                lightCount: pointsInside.features.length
+//            };
+//            return buffer;
+//        });
+//        const bufferedFeatureCollection = turf.featureCollection(bufferedZones);
+//        res.json(bufferedFeatureCollection);
     } catch (err) {
         console.error(err)
         res.status(500).send({ error: err.message });

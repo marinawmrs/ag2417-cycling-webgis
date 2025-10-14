@@ -49,7 +49,6 @@ export async function fetchFilteredPumps(longitude, latitude, distance, rating) 
 
 export async function fetchFilteredParkings(longitude, latitude, distance, rating, safety, availability) {
     const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_parkings_geojson_filtered?lon=${longitude}&lat=${latitude}&distance=${distance}&rating=${rating}&safety=${safety}&availability=${availability}`);
-    console.log(res)
     const data = await res.json();
     if (!res.ok) throw new Error('Error fetching filtered parking');
     return data.features || [];

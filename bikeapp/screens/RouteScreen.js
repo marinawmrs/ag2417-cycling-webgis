@@ -5,7 +5,9 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import * as Location from "expo-location";
 import config from "../conn.json";
 
+import LightsMarkers from '../components/LightsMarkers';
 import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
+import useNightMode from '../utils/useNightmode';
 
 /**
  * Start:
@@ -19,7 +21,10 @@ import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
  */
 
 export default function RouteScreen({route}) {
-  const nightMode = route?.params?.nightMode ?? false;
+//  const { nightMode: autoNightMode, setNightMode, lights, handleRegionChangeComplete } = useNightMode();
+//  const nightMode = route?.params?.nightMode ?? autoNightMode;
+  const { nightMode, setNightMode, lights, handleRegionChangeComplete } = useNightMode(route?.params?.nightMode);
+
   console.log(nightMode)
 
   const [start, setStart] = useState(null); // {latitude, longitude}
@@ -340,6 +345,7 @@ export default function RouteScreen({route}) {
         style={styles.map}
         userInterfaceStyle={nightMode ? 'dark' : 'light'} // works for ios
         customMapStyle={nightMode ? darkMapStyle : lightMapStyle}
+        onRegionChangeComplete={handleRegionChangeComplete}
         onPress={onMapPress}
         initialRegion={{
           latitude: 59.3293,
@@ -353,6 +359,7 @@ export default function RouteScreen({route}) {
         {start && <Marker coordinate={start} title="Start" pinColor="green" />}
         {end && <Marker coordinate={end} title="End" pinColor="red" />}
         {renderPolyline()}
+        {nightMode && <LightsMarkers lights={lights} />}
       </MapView>
 
       {/* Top route stats box */}

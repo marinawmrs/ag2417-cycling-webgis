@@ -12,8 +12,8 @@ export default function LightsMarkers({ lights }) {
         const centroid = turf.center(feature).geometry.coordinates;
         const [lon, lat] = centroid;
         const lightCount = feature.properties.lightCount;
-        const opacity = Math.min(0.01 + lightCount * 0.05, 0.5);
-        const size = Math.min(50 + lightCount * 2, 100);
+        const opacity = 1; //Math.min(0.01 + lightCount * 0.05, 0.5);
+        const size = 7; // Math.min(50 + lightCount * 2, 100);
 
         return (
           <Marker
