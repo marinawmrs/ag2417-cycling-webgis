@@ -19,8 +19,7 @@ import BottomNavigation from '../components/BottomNavigation';
 import FilterModal from '../components/FilterModal';
 
 // helper/fetching functions
-import { fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights } from '../utils/fetchMapData';
-import { postBikeparkRating, postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchParkingAverage_hour, fetchFilteredPumps, fetchFilteredParkings } from '../utils/fetchRatings';
+import { fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights, postBikeparkRating, postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchParkingAverage_hour, fetchFilteredPumps, fetchFilteredParkings } from '../utils/fetchMapData';
 import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
 import useSnackbar from '../utils/useSnackbar';
 import useNightMode from '../utils/useNightmode';
@@ -34,7 +33,7 @@ export default function MapScreen({ navigation }) {
     const [pumps, setPumps] = useState([]);
     const [parkings, setParkings] = useState([]);
     const [darkNotifVisible, setDarkNotifVisible] = useState(true);
-    const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: true, paths: false, distance: 5, rating: 0, safety: 0, availability: 0});
+    const [visibleLayers, setVisibleLayers] = useState({ pumps: true, parking: true, paths: false, distance_pump: 5, distance_park: 1, rating: 0, safety: 0, availability: 0});
     const [selectedFeature, setSelectedFeature] = useState(null);
     const [bikepumpRatings, setBikepumpRatings] = useState({ working_status: null, vibe_rating: null });
     const [bikeparkRatings, setBikeparkRatings] = useState({ safety_rating: null, availability_rating: null, vibe_rating: null })
@@ -75,7 +74,8 @@ export default function MapScreen({ navigation }) {
                 pumps: prev.pumps,
                 parking: prev.parking,
                 paths: prev.paths,
-                distance: prev.distance,
+                distance_pump: prev.distance_pump,
+                distance_park: prev.distance_park,
                 rating: prev.rating,
                 safety: prev.safety,
                 availability: prev.availability
@@ -123,14 +123,14 @@ export default function MapScreen({ navigation }) {
             let location = await Location.getCurrentPositionAsync({});
             const { latitude, longitude } = location.coords;
             if (visibleLayers.pumps) {
-                const filteredPumps = await fetchFilteredPumps(longitude, latitude, visibleLayers.distance, visibleLayers.rating);
+                const filteredPumps = await fetchFilteredPumps(longitude, latitude, visibleLayers.distance_pump, visibleLayers.rating);
                 setPumps(filteredPumps);
             } else {
                 setPumps([]);
             }
 
             if (visibleLayers.parking) {
-                const filteredParkings = await fetchFilteredParkings(longitude, latitude, visibleLayers.distance, visibleLayers.rating, visibleLayers.safety, visibleLayers.availability);
+                const filteredParkings = await fetchFilteredParkings(longitude, latitude, visibleLayers.distance_park, visibleLayers.rating, visibleLayers.safety, visibleLayers.availability);
                 setParkings(filteredParkings || []);
             } else {
                 setParkings([]);

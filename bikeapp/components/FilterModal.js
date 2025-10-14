@@ -39,16 +39,30 @@ export default function FilterModal({ visible, onDismiss, visibleLayers, setVisi
                         </View>
 
                         <View style={styles.section}>
-                            <Text>Filter by distance (km): { visibleLayers.distance.toFixed(2)}</Text>
+                            <Text>Filter by pump distance (km): { visibleLayers.distance_pump.toFixed(2)}</Text>
                             <Slider
                                 style={{ width: '100%' }}
                                 minimumValue={0.05}
                                 maximumValue={5}
                                 step={0.5}
-                                value={ visibleLayers.distance}
-                                onValueChange={(val) => setVisibleLayers((prev) => ({ ...prev, distance: val }))}
+                                value={ visibleLayers.distance_pump}
+                                onValueChange={(val) => setVisibleLayers((prev) => ({ ...prev, distance_pump: val }))}
                             />
                         </View>
+
+                        {visibleLayers.parking &&
+                            (<View style={styles.section}>
+                                <Text>Filter by park distance (km): { visibleLayers.distance_park.toFixed(2)}</Text>
+                                <Slider
+                                    style={{ width: '100%' }}
+                                    minimumValue={0.05}
+                                    maximumValue={2}
+                                    step={0.2}
+                                    value={ visibleLayers.distance_park}
+                                    onValueChange={(val) => setVisibleLayers((prev) => ({ ...prev, distance_park: val }))}
+                                />
+                            </View>)
+                        }
 
                         <View style={styles.section}>
                             <Text>Filter by average rating: { visibleLayers.rating.toFixed(2)}</Text>
