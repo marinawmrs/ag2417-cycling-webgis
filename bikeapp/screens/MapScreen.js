@@ -20,7 +20,7 @@ import FilterModal from '../components/FilterModal';
 
 // helper/fetching functions
 import { fetchTwilightTimes, fetchPumps, fetchParkings, fetchLights } from '../utils/fetchMapData';
-import { postBikeparkRating, postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchFilteredPumps, fetchFilteredParkings } from '../utils/fetchRatings';
+import { postBikeparkRating, postBikepumpRating, fetchPumpAverage, fetchParkingAverage, fetchParkingAverage_hour, fetchFilteredPumps, fetchFilteredParkings } from '../utils/fetchRatings';
 import { darkMapStyle, lightMapStyle } from '../utils/mapStyles';
 import useSnackbar from '../utils/useSnackbar';
 
@@ -41,6 +41,11 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
     const [averageBikepark, setAverageBikepark] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedFeatureType, setSelectedFeatureType] = useState(null);
+    const now = new Date();
+    const currentHour = now.getHours(); 
+    const startHour = Math.floor(currentHour / 3) * 3; 
+    const endHour = startHour + 3;                    
+
 
     const {
         visible: snackbarVisible,
@@ -223,7 +228,7 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                         onSelect={(feature) => {
                             setSelectedFeature(feature);
                             setSelectedFeatureType('parking');
-                            fetchParkingAverage(feature.properties.fid)
+                            fetchParkingAverage_hour(feature.properties.fid, startHour, endHour)
                                 .then((avg) => {
                                     console.log('averageBikepark:', avg); // ← Debug-Ausgabe
                                     setAverageBikepark(avg);
@@ -260,6 +265,8 @@ export default function MapScreen({ navigation, nightMode, setNightMode }) {
                     averageBikepark={averageBikepark}
                     bikeparkRatings={bikeparkRatings}
                     setBikeparkRatings={setBikeparkRatings}
+                    startHour={startHour}
+                    endHour={endHour}
                     onSubmit={submitBikeparkRating}
                     onClose={() => {
                         setSelectedFeature(null);

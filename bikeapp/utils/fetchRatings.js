@@ -35,6 +35,11 @@ export async function fetchParkingAverage(fid) {
     return res.json();
 }
 
+export async function fetchParkingAverage_hour(fid, startHour, endHour) {
+    const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/parkering_average/?parking_id=${fid}&startHour=${startHour}&endHour=${endHour}`);
+    return res.json();
+}
+
 export async function fetchFilteredPumps(longitude, latitude, distance, rating) {
     const res = await fetch(`http://${config.app.api_base_IP}:${config.app.port}/api/get_pumps_geojson_filtered?lon=${longitude}&lat=${latitude}&distance=${distance}&rating=${rating}`);
     const data = await res.json();
