@@ -57,7 +57,7 @@ The project was developed as part of the **AG2417 Web and Mobile GIS** course.
 --- 
 
 ### DB and app connection secrets
-# Create `config.json` file under project root with the following structure:
+#### Create `config.json` file under project root with the following structure:
   ```
   {
     "app": {
@@ -78,7 +78,7 @@ The project was developed as part of the **AG2417 Web and Mobile GIS** course.
   use database credentials provided by the teaching assistant
   get API key from [Open Stockholm](https://openstreetgs.stockholm.se/)
   make sure the entered IP adress of your computer and corresponding ports (3000 and 8081) are accessible from your mobile
-# Create `conn.json` under the bikeapp root (needed because EAS cannot access `config.json`):
+#### Create `conn.json` under the bikeapp root (needed because EAS cannot access `config.json`):
 ```
 {
   "app": {
