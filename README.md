@@ -26,20 +26,29 @@ The project was developed as part of the **AG2417 Web and Mobile GIS** course.
    git clone [repo-url]
    cd ag2417-cycling-webgis
    ``` 
-2. run the server locally
+2. install backend dependencies
     ```
-    node server/server.js
-    ```
-3. navigate to the bikeapp
-4. install dependencies
-    ```
+    cd server
     npm install
     ```
-5. run expo 
+3. Create `config.json` in the project root (see below) using the database credentials provided by the teaching assistant 
+4. run the server locally
+    ```
+    cd ..
+    node server/server.js
+    ```
+5. navigate to the bikeapp and install frontend dependencies
+    ```
+    cd bikeapp
+    npm install
+    ```
+6. adjust or create `conn.json` in the bikeapp folder (see below)
+
+7. run expo 
     ```
     npx expo start
     ```
-6. scan the QR code with the Expo Go app (Android) or camera (iOS)
+8. scan the QR code with the Expo Go app (Android) or camera (iOS)
 
 
 --- 
