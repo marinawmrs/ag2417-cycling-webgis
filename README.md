@@ -26,35 +26,38 @@ The project was developed as part of the **AG2417 Web and Mobile GIS** course.
    git clone [repo-url]
    cd ag2417-cycling-webgis
    ``` 
-2. install backend dependencies
+2. install Node.js through [Node.js official website](https://nodejs.org)
+3. install backend dependencies
     ```
     cd server
     npm install
-    ```
-3. Create `config.json` in the project root (see below) using the database credentials provided by the teaching assistant 
-4. run the server locally
-    ```
     cd ..
+    ```
+4. Create `config.json` in the project root (see below) using the database credentials provided by the teaching assistant 
+5. run the server locally
+    ```
     node server/server.js
     ```
-5. navigate to the bikeapp and install frontend dependencies
+6. navigate to the bikeapp and install frontend dependencies
     ```
     cd bikeapp
     npm install
     ```
-6. adjust or create `conn.json` in the bikeapp folder (see below)
-
-7. run expo 
+7. adjust or create `conn.json` in the bikeapp folder (see below)
+8. run expo 
     ```
     npx expo start
     ```
-8. scan the QR code with the Expo Go app (Android) or camera (iOS)
+9. install the Expo Go app through the Playstore (Android) or Appstore (IOS)    
+10. scan the QR code with the Expo Go app (Android) or camera (iOS)
+11. if asked in terminal where expo is running, select "proceed anonymously"
+12. allow location use in the app
 
 
 --- 
 
 ### DB and app connection secrets
-Create `config.json` file under project root with the following structure:
+# Create `config.json` file under project root with the following structure:
   ```
   {
     "app": {
@@ -72,8 +75,10 @@ Create `config.json` file under project root with the following structure:
     }
   }
   ```
-  
-Create `conn.json` under the bikeapp root (needed because EAS cannot access `config.json`):
+  use database credentials provided by the teaching assistant
+  get API key from [Open Stockholm](https://openstreetgs.stockholm.se/)
+  make sure the entered IP adress of your computer and corresponding ports (3000 and 8081) are accessible from your mobile
+# Create `conn.json` under the bikeapp root (needed because EAS cannot access `config.json`):
 ```
 {
   "app": {
@@ -82,6 +87,7 @@ Create `conn.json` under the bikeapp root (needed because EAS cannot access `con
   }
 }
 ```
+same IP adress as in config.json
 
 
 ### File structure
