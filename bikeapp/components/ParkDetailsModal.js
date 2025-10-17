@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, View, Text, TouchableOpacity, Button, StyleSheet } from 'react-native';
-import { fetchParkingAverage_hour } from '../utils/fetchRatings';
+import { fetchParkingAverage_hour } from '../utils/fetchMapData';
 
 const timeWindows = [
     { label: '00-03', start: 0, end: 3 },
